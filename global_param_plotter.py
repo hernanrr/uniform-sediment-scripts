@@ -27,7 +27,7 @@ rc('font', size = 10, **{'family':'sans-serif','sans-serif':['Helvetica']})
 #rc('font',**{'family':'serif','serif':['Palatino']})
 rc('text', usetex=True)
 rcParams['pdf.fonttype'] = 42
-rcParams['text.color'] = 'gray'
+rcParams['text.color'] = 'black'
 rcParams['text.latex.preamble'] = [
     r'\usepackage{siunitx}',   # i need upright \micro symbols, but you need...
     r'\sisetup{detect-all}',   # ...this to force siunitx to actually use your fonts
@@ -148,7 +148,7 @@ bedload_rels['A-M'] = {'alpha':np.float(17),
                        'eq': am_eq,
                        'name': 'Ashida & Michiue',
                        'fcall': ashida_michiue,
-                       'color': 'gray',
+                       'color': 'black',
                        'linestyle': '--',
                    }
 bedload_rels['MPM-W'] = {'alpha':np.float(3.97),
@@ -157,7 +157,7 @@ bedload_rels['MPM-W'] = {'alpha':np.float(3.97),
                          'eq': mpm_eq, 
                          'name': 'MPM, modified by Wong',
                          'fcall':mpm_wong,
-                         'color': 'gray',
+                         'color': 'black',
                          'linestyle': '-',
                      }
 
@@ -209,12 +209,12 @@ def format_plot(fig, xlim, ylim, xscale, yscale):
         ax.yaxis.set_ticks_position('none')
         ax.set_xscale(xscale)
         ax.set_yscale(yscale)
-        ax.xaxis.label.set_color('dimgray')
-        ax.yaxis.label.set_color('dimgray')
+        ax.xaxis.label.set_color('black')
+        ax.yaxis.label.set_color('black')
         for spine in spines_to_remove:
             ax.spines[spine].set_visible(False)
         for spine in spines_to_keep:
-            ax.spines[spine].set_color('dimgray')
+            ax.spines[spine].set_color('black')
         ax.tick_params(\
             axis='both',          # changes apply to the x-axis
             which='both',      # both major and minor ticks are affected
@@ -224,7 +224,7 @@ def format_plot(fig, xlim, ylim, xscale, yscale):
             right='off',         # ticks along the right edge are off
             labelbottom='on', # labels along the bottom edge are off
             labelleft='on',  # labels along the bottom edge are off
-            labelcolor = 'dimgray') # Labels are gray
+            labelcolor = 'black') # Labels are gray
     #for ax in [ax.xaxis, ax.yaxis]:
     #    ax.set_major_formatter(ScalarFormatter())
 
