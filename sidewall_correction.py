@@ -277,10 +277,13 @@ def compute_skin_friction(swc, lim):
         convergence = False
         while not convergence:
             Rhb1 = Rhb
-            ub_star_s = newton_raphson(lambda ub_star: fManning(ub_star,
-                                                                swc['U'][i],
-                                                                Rhb, alpha_r,
-                                                                ks), 0.05)
+            ub_star_s = newton_raphson(lambda ub_star:
+                                       fManning(ub_star,
+                                                swc['U'][i],
+                                                Rhb,
+                                                alpha_r,
+                                                ks),
+                                       0.05)
             Rhb = ( ub_star_s ** 2 ) / (swc['S'] * g )
             convergence = good_enough(Rhb1, Rhb)
         # After convergence, store the converged values
@@ -389,11 +392,11 @@ def main():
     print 'Script started'
     # Specify the feedrates that this script considers for some things
     feed = ['500', '1000', '1500', '2000', '2500', '3000', '4000', '6000',
-            '8000']
+            '8000', '12000', '16000'] # Most likely  not used. 
     # Set how many nodes downstream to ignore. I suggest 2.
     lim = 2
     # Load the profiles
-    runs = ['equilibrium']
+    runs = ['equilibrium', 'aggradation']
     for run in runs:
         # Create a dictionary to store all the results:
         d = {}
@@ -438,23 +441,28 @@ def main():
             Sf = compute_friction_slope(E, x)
             # Remove wall effects and collect results in a single variable.
             swc_values = remove_wall_effects(x, H, U, E, -lim, B0=B0)
+            # Create dictionary to store the computed global parameters
             d[key] = {'x': x, 'xi': xi, 'eta': eta, 'H': H, 'A': A, 'Sl': Sl,
             'U': U, 'Fr': Fr, 'E': E, 'Sf': Sf}
+            # Add side-wall corrected values to the global parameter dictionary
             d[key].update( dict(itertools.izip(swc_keys, swc_values)) )
+            # Remove form drag from the sidewall-corrected parameters. 
             skin_friction, ks = compute_skin_friction(d[key], -lim)
+            # Update the global-parameters dictionary with skin friction values.
             d[key].update(skin_friction)
             # Compute statistics on values stored in dictionary
             statistics = compute_statistics(d[key], -lim)
+            # Create a dictionary to store statistics and fill it. 
             stats[key]={}
             stats[key].update(statistics)
-            # Summarize statistics
+            # Summarize statistics across runs of same feedrate. 
             stats_summary = summarize_statistics(stats)
             # Compute the mass feed rate
             d[key]['Gs'] = np.int(key.split('-')[0])
             # Put it in a nice LaTeX string
             d[key]['Feed rate'] = (r'{:d}{}' .format(
                 d[key]['Gs'],'\,\si{\g \per \minute}' ) )
-            # Compute the volumetric unit feed rate
+            # Compute the volumetric unit feed rate, convert grams and minutes.
             d[key]['qf'] = d[key]['Gs'] / (1000 * B0 * 60 * rho_s )
             # Compute the Einstein Number for the run
             d[key]['qb_star'] = d[key]['qf'] / (D * np.sqrt( R * g * D ) )
