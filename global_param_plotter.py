@@ -224,7 +224,7 @@ def format_plot(fig, xlim, ylim, xscale, yscale):
             right='off',         # ticks along the right edge are off
             labelbottom='on', # labels along the bottom edge are off
             labelleft='on',  # labels along the bottom edge are off
-            labelcolor = 'black') # Labels are gray
+            labelcolor = 'black') # Labels are black
     #for ax in [ax.xaxis, ax.yaxis]:
     #    ax.set_major_formatter(ScalarFormatter())
 
@@ -323,7 +323,6 @@ def plot_my_points(ax, s):
         ax.plot(x, y, label=label, linestyle = 'None', marker = u'o',
                 markersize=6, markerfacecolor='#8da0cb',
                 markeredgecolor='gray', markeredgewidth=0.2)
-    print '\t\t\t\t{}'.format( s[key]['Meta']['ks'])
     return
 
 def print_table(gp, stats, run):
@@ -368,7 +367,7 @@ def main():
     sourcepath = (home + '/Documents/Experiments/Data/processed/profiles')
     outputpath = (home + '/Documents/Experiments/Data/output/profiles')
     pointspath = (home + '/Documents/Experiments/Data/scripts')
-    runs = ['equilibrium']
+    runs = ['equilibrium', 'aggradation']
     for run in runs:
         # Load the pickle with the relevant global parameters
         gp = load_pickle(sourcepath, run, 'global_parameters')
@@ -376,112 +375,112 @@ def main():
         stats = load_pickle(sourcepath, run, 'global_stats_summary')
         # Print equilibrium results table to file
         print_table(gp, stats, run)
-#         print 'Plotting experimental points'
-#         # Create a figure for the plots of experimental points
-#         fig = plt.figure(tight_layout=True)
-#         # Create axis for existing load relation curves
-#         ax1 = fig.add_subplot(111, aspect = 'equal')
-#         # Plot the load relation curves (Ashida & Michiue and MPM-W, for now)
-#         plot_load_relations(ax1, bedload_rels)
-#         # Plot the relevant points
-#         plot_stresses(ax1, gp, stats)
-#         # Add title and labels
-#         xlabel1 = r'$\tau_{bs}^*$'# - \tau_{ref}^*$'
-#         ylabel1 = r'$q{_b}{^*}$'#r'q$^*_b$'
-#         label_axes(ax1, xlabel1, ylabel1, 10)
-#         #title1 = r''
-#         #fig.suptitle(title1, fontsize = 20)
-#         ax1.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
-#         format_plot(fig, (0, 1), (0.05, 10), 'log', 'log')
+        print 'Plotting experimental points'
+        # Create a figure for the plots of experimental points
+        fig = plt.figure(tight_layout=True)
+        # Create axis for existing load relation curves
+        ax1 = fig.add_subplot(111, aspect = 'equal')
+        # Plot the load relation curves (Ashida & Michiue and MPM-W, for now)
+        plot_load_relations(ax1, bedload_rels)
+        # Plot the relevant points
+        plot_stresses(ax1, gp, stats)
+        # Add title and labels
+        xlabel1 = r'$\tau_{bs}^*$'# - \tau_{ref}^*$'
+        ylabel1 = r'$q{_b}{^*}$'#r'q$^*_b$'
+        label_axes(ax1, xlabel1, ylabel1, 10)
+        #title1 = r''
+        #fig.suptitle(title1, fontsize = 20)
+        ax1.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
+        format_plot(fig, (0, 1), (0.05, 10), 'log', 'log')
 
-#         # Save the figure of experimental points
-#         save_fig(fig, outputpath, run, 'experimental_points')
+        # Save the figure of experimental points
+        save_fig(fig, outputpath, run, 'experimental_points')
 
-# ###############
-# # Plot of phi #
-# ###############
+###############
+# Plot of phi #
+###############
+        print 'Plotting phi'
+        # Create a plot for phi
+        phi = plt.figure()
+        ax2 = phi.add_subplot(111)
+        # Plot phi
+        plot_phi(ax2, stats)
+        ax2.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
+        # Label the phi plot
+        xlabel2 = r'$\tau_{b}^*$'# - \tau_{ref}^*$'
+        ylabel2 = r'$\varphi$'#r'q$^*_b$'
+        label_axes(ax2, xlabel2, ylabel2, 10)
+        format_plot(phi, (0, 1), (0, 1), 'linear', 'linear')
+        
+        # Save the figure of phi
+        save_fig(phi, outputpath, run, 'skin_friction_fraction')
+
+
+# ##########################
+# # plot of phi of average #
+# ##########################
 #         print 'Plotting phi'
 #         # Create a plot for phi
-#         phi = plt.figure()
-#         ax2 = phi.add_subplot(111)
+#         phiavg = plt.figure()
+#         ax3 = phiavg.add_subplot(111)
 #         # Plot phi
-#         plot_phi(ax2, stats)
-#         ax2.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
+#         plot_phi_average(ax3, stats)
 #         # Label the phi plot
-#         xlabel2 = r'$\tau_{b}^*$'# - \tau_{ref}^*$'
-#         ylabel2 = r'$\varphi$'#r'q$^*_b$'
-#         label_axes(ax2, xlabel2, ylabel2, 10)
-#         format_plot(phi, (0, 1), (0, 1), 'linear', 'linear')
+#         xlabel3 = r'$\tau_{b}^*$'# - \tau_{ref}^*$'
+#         ylabel3 = r'$\varphi$'#r'q$^*_b$'
+#         label_axes(ax3, xlabel3, ylabel3, 10)
+#         format_plot(phiavg, (0, 1), (0, 1), 'linear', 'linear')
         
 #         # Save the figure of phi
-#         save_fig(phi, outputpath, run, 'skin_friction_fraction')
+#         save_fig(phiavg, outputpath, run, 'skin_friction_fraction_avg')
+#         #Close all figures
 
 
-# # ##########################
-# # # plot of phi of average #
-# # ##########################
-# #         print 'Plotting phi'
-# #         # Create a plot for phi
-# #         phiavg = plt.figure()
-# #         ax3 = phiavg.add_subplot(111)
-# #         # Plot phi
-# #         plot_phi_average(ax3, stats)
-# #         # Label the phi plot
-# #         xlabel3 = r'$\tau_{b}^*$'# - \tau_{ref}^*$'
-# #         ylabel3 = r'$\varphi$'#r'q$^*_b$'
-# #         label_axes(ax3, xlabel3, ylabel3, 10)
-# #         format_plot(phiavg, (0, 1), (0, 1), 'linear', 'linear')
-        
-# #         # Save the figure of phi
-# #         save_fig(phiavg, outputpath, run, 'skin_friction_fraction_avg')
-# #         #Close all figures
-
-
-# #################
-# # plot friction #
-# #################
-#         print 'Plotting friction'
-#         # Create a plot for the friction
-#         friction = plt.figure()
-#         ax4 = friction.add_subplot(111)
-#         # Plot friction relation
-#         plot_friction(ax4)
-#         # Get the experimental points from MPM, Gilbert and Viparelli
-#         points = load_points(pointspath)
-#         # Process others' points
-#         mpm, gilbert, viparelli = process_points(*points)
-#         # Plot MPM
-#         plot_others_points(ax4, mpm[:,0], mpm[:,1], 'MPM', marker='v')
-#         # Plot Gilbert
-#         plot_others_points(ax4, gilbert[:,0], gilbert[:,1], 'Gilbert',
-#                            marker='x')
-#         # Plot Viparelli
-#         plot_others_points(ax4, viparelli[:,0], viparelli[:,1], 'Viparelli',
-#                            marker='s')
-#         # Plot my points
-#         #
-#         #
-#         plot_my_points(ax4, stats)
-#         # http://stackoverflow.com/questions/13303928/how-to-make-custom
-#         #-legend-in-matplotlib
-#         #Get artists and labels for legend and chose which ones to display
-#         handles, labels = ax4.get_legend_handles_labels()
-#         display = (0, 1, 2, 3, 4)
-#         #Create legend from custom artist/label lists
-#         ax4.legend([handle for i ,handle in enumerate(handles) if i in display],
-#                   [label for i, label in enumerate(labels) if i in display],
-#                    loc='upper left', frameon=False, fontsize=8 )
+#################
+# plot friction #
+#################
+        print 'Plotting friction'
+        # Create a plot for the friction
+        friction = plt.figure()
+        ax4 = friction.add_subplot(111)
+        # Plot friction relation
+        plot_friction(ax4)
+        # Get the experimental points from MPM, Gilbert and Viparelli
+        points = load_points(pointspath)
+        # Process others' points
+        mpm, gilbert, viparelli = process_points(*points)
+        # Plot MPM
+        plot_others_points(ax4, mpm[:,0], mpm[:,1], 'MPM', marker='v')
+        # Plot Gilbert
+        plot_others_points(ax4, gilbert[:,0], gilbert[:,1], 'Gilbert',
+                           marker='x')
+        # Plot Viparelli
+        plot_others_points(ax4, viparelli[:,0], viparelli[:,1], 'Viparelli',
+                           marker='s')
+        # Plot my points
+        #
+        #
+        plot_my_points(ax4, stats)
+        # http://stackoverflow.com/questions/13303928/how-to-make-custom
+        #-legend-in-matplotlib
+        #Get artists and labels for legend and chose which ones to display
+        handles, labels = ax4.get_legend_handles_labels()
+        display = (0, 1, 2, 3, 4)
+        #Create legend from custom artist/label lists
+        ax4.legend([handle for i ,handle in enumerate(handles) if i in display],
+                  [label for i, label in enumerate(labels) if i in display],
+                   loc='upper left', frameon=False, fontsize=8 )
 
         
-#         #ax4.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
-#         xlabel4 = r'$R_{\text{H}_{\text{bs}}} / k_{\text{s}}$'
-#         ylabel4 = r'$C_{\text{f}_{\text{bs}}}$'
-#         label_axes(ax4, xlabel4, ylabel4, 10)
-#         format_plot(friction, (1, 100), (1e-3, 1e-1), 'log', 'log')
-#         # Save the figure of friction
-#         save_fig(friction, outputpath, run, 'friction_plots')
+        #ax4.legend(fontsize=8, loc='upper left', numpoints = 1, frameon=False)
+        xlabel4 = r'$R_{\text{H}_{\text{bs}}} / k_{\text{s}}$'
+        ylabel4 = r'$C_{\text{f}_{\text{bs}}}$'
+        label_axes(ax4, xlabel4, ylabel4, 10)
+        format_plot(friction, (1, 100), (1e-3, 1e-1), 'log', 'log')
+        # Save the figure of friction
+        save_fig(friction, outputpath, run, 'friction_plots')
 
-#         plt.close('all')
+        plt.close('all')
     
     print 'Script completed successfully'
     return
