@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """ This script plots the global parameters
 
