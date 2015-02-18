@@ -93,7 +93,7 @@ def main():
     # Create Pickle
     pickle_hdr = 'aggradation_sonars.pickle'
     with open(pickle_hdr, 'wb') as pickle_outfile:
-        pickle.dump(eq, pickle_outfile, -1)    
+        pickle.dump(ag, pickle_outfile, -1)    
 
     # Create JSON dump
     # json_header = 'aggradation_profiles.json'
