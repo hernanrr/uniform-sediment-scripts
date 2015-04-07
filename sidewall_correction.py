@@ -446,6 +446,8 @@ def main():
             'U': U, 'Fr': Fr, 'E': E, 'Sf': Sf}
             # Add side-wall corrected values to the global parameter dictionary
             d[key].update( dict(itertools.izip(swc_keys, swc_values)) )
+
+            
             # Remove form drag from the sidewall-corrected parameters. 
             skin_friction, ks = compute_skin_friction(d[key], -lim)
             # Update the global-parameters dictionary with skin friction values.

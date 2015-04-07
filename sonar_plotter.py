@@ -27,7 +27,7 @@ rc('font', size = 10, **{'family':'sans-serif','sans-serif':['Helvetica']})
 #rc('font',**{'family':'serif','serif':['palatino']})
 rc('text', usetex=True)
 rcParams['pdf.fonttype'] = 42
-rcParams['text.color'] = 'dimgray'
+rcParams['text.color'] = 'black'
 rcParams['text.latex.preamble'] = [
     r'\usepackage{siunitx}',   # i need upright \micro symbols, but you need...
     r'\sisetup{detect-all}',   # ... to force siunitx to actually use your fonts
@@ -179,16 +179,18 @@ def plot_timeseries(d, h, run, name):
 
     spines_to_remove = ['top', 'right']
     spines_to_keep = ['bottom', 'left']
+
+    # Plot whichever is smallest: one hour of data or full data.
     for ax in fig.axes:
-        try:
-            ax.set_xbound(lower=d['t'][0], upper=d['t'][723])            
-        except IndexError:
-            ax.set_xbound(lower=d['t'][0], upper=d['t'][-1])            
-        if name=='profiles':
-            ax.set_ybound(lower=50, upper=300)            
-        else:
-            ax.set_ybound(lower=-40, upper=40)
-            ax.yaxis.set_ticks([-40, -20, 0, 20, 40])         
+        # try:
+        #     ax.set_xbound(lower=d['t'][0], upper=d['t'][723])            
+        # except IndexError:
+        #     ax.set_xbound(lower=d['t'][0], upper=d['t'][-1])            
+        # if name=='profiles':
+        #     ax.set_ybound(lower=50, upper=300)            
+        # else:
+        ax.set_ybound(lower=-40, upper=40)
+        ax.yaxis.set_ticks([-40, -20, 0, 20, 40])         
             
         ax.xaxis.set_visible(False)
         ax.xaxis.set_ticks_position('none')
@@ -199,7 +201,7 @@ def plot_timeseries(d, h, run, name):
         for spine in spines_to_remove:
             ax.spines[spine].set_visible(False)
         for spine in spines_to_keep:
-            ax.spines[spine].set_color('gray')
+            ax.spines[spine].set_color('black')
 
     # Format PDF and CDF axes
     for ax in [ax7, ax8, ax9, ax10, ax11, ax12]:
@@ -217,25 +219,25 @@ def plot_timeseries(d, h, run, name):
         for spine in spines_to_remove:
             ax.spines[spine].set_visible(False)
         for spine in spines_to_keep:
-            ax.spines[spine].set_color('gray')
+            ax.spines[spine].set_color('black')
         if ax==ax7:
             label = ax.set_ylabel('x = 3.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         elif ax==ax8:
             label = ax.set_ylabel('x = 4.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         elif ax==ax9:
             label = ax.set_ylabel('x = 5.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         elif ax==ax10:
             label = ax.set_ylabel('x = 6.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         elif ax==ax11:
             label = ax.set_ylabel('x = 7.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         elif ax==ax12:
             label = ax.set_ylabel('x = 8.68 m', fontsize = 12, color =
-                                  'gray', rotation = 'horizontal')
+                                  'black', rotation = 'horizontal')
         ax.yaxis.set_label_coords(1.40, 0.425)
 
 
@@ -248,9 +250,9 @@ def plot_timeseries(d, h, run, name):
     xlabel1 = r'$t / hours$'
     xlabel2 = r'$p$'
     
-    ax6.set_xlabel(xlabel1, fontsize = 16, color = 'gray',
+    ax6.set_xlabel(xlabel1, fontsize = 16, color = 'black',
                   rotation = 'horizontal')
-    ax12.set_xlabel(xlabel2, fontsize = 16, color = 'gray',
+    ax12.set_xlabel(xlabel2, fontsize = 16, color = 'black',
                   rotation = 'horizontal')
 
     ylabel1 = r'$ \left( \eta - \bar{\eta} \right) $ /mm '
@@ -364,7 +366,7 @@ def plot_sigma(gp, d):
         for spine in spines_to_remove:
             ax.spines[spine].set_visible(False)
         for spine in spines_to_keep:
-            ax.spines[spine].set_color('gray')
+            ax.spines[spine].set_color('black')
 
     # add labels and stuff
     ax1.xaxis.set_visible(True)
@@ -399,7 +401,7 @@ def main():
     """Main routine"""
     print 'Script started' 
     # Load the profiles
-    runs = ['equilibrium']
+    runs = ['equilibrium', 'aggradation']
     for run in runs:
         # Choose source path
         if run=='equilibrium':
@@ -439,10 +441,13 @@ def main():
 
             fluctuations = {feedrate:{}}
             for key, value in data[feedrate].items():
+                # No need to do anythig for the time information
                 if key == 't':
                     fluctuations[feedrate].setdefault('t', t)
                 else:
+                    # Find the trend. Will be average for equilibrium. 
                     mu = np.mean(value)
+                    # Detrend to get fluctuations around the mean. 
                     fluctuations[feedrate][key] = value - mu
             # Compute the histogram of the fluctuations
             histograms = {feedrate:{}}
