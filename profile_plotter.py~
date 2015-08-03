@@ -142,13 +142,13 @@ def main():
         else:
             os.chdir(ag_out_path)
         for key in profiles:
-#            if key.split('-')[0]=='16000':
-            x = profiles[key]['x']
-            wse = profiles[key]['wse'] / 100.
-            bed = profiles[key]['bed'] / 100.
-            plot_profile(x, wse, bed, key)             
-#            else:
-#                pass
+            if key.split('-')[0]=='16000':
+                  x = profiles[key]['x']
+                  wse = profiles[key]['wse'] / 100.
+                  bed = profiles[key]['bed'] / 100.
+                  plot_profile(x, wse, bed, key)             
+            else:
+                pass
               
               
 
