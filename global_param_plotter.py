@@ -9,6 +9,7 @@ import os
 import pdb
 import re 
 import numpy as np
+from numpy.polynomial import polynomial as P
 try:
     import cPickle as pickle
 except:
@@ -40,72 +41,7 @@ def NumericalSort(value):
     parts = numbers.split(value)
     parts[1::2] = map(int, parts[1::2])
     return parts
-# Some Constants
 
-# g = 9.81 # Gravity,[ m / s ** 2 ]
-# nu =  1.0e-6 # Dynamic viscosity of water [ m **2 / s ]
-# rho = 1000 # Density of water [ kg / m ** 3 ]
-
-# # Ashida Michiue bedload transport relation.
-# alpha = 17
-# tau_star_c = 0.05
-
-# # Meyer-Peter and Muller, corrected by Wong bedload transport relation
-# alpha_MPM = 3.97
-# tau_star_c_MPM = 0.05
-# n_MPM = 1.5
-
-# #Flume stuff
-# B0 = 0.19 # Meters of channel width
-# rho_s = 2650 # kg/m3
-# R = 1.65
-# D = 1.11/1000 # meters, characteristic grain size
-
-
-
-# # Plot the data
-# fig = plt.figure(figsize=(6,6), tight_layout=True)
-# ax1 = fig.add_subplot(211, aspect = 'equal')
-# for key in d.keys():
-#     data = d[key]['tau_star_bs'] #- tau_star_c
-#     x = excess_shields[key]
-#     y = q_b_star[key]
-#     xmin = np.amin(data)
-#     xmax = np.amax(data)
-#     height = 0.001
-#     print key, xmin, xmax
-#     ax1.add_patch(Rectangle((xmin,y-height/2), (xmax-xmin), height, facecolor
-#                   = 'blue', edgecolor = 'blue', alpha=0.5 ))
-#     ax1.scatter(x, y, s=48, facecolor = 'blue', edgecolors='grey', lw = 0)
-# #    ax1.axhline(y = y, xmin=xmin, xmax=xmax, linewidth=4, color='blue',
-# #                alpha=0.5)
-#     ax1.set_xscale('log')
-#     ax1.set_yscale('log')
-
-
-
-# ax2 = fig.add_subplot(212, aspect = 'equal')
-# for key in d.keys():
-#     data = d[key]['tau_star_bs'] #- tau_star_c
-#     x = total_shields[key]
-#     y = phi[key]
-#     ax2.scatter(x, y, s=48, facecolor = 'blue', edgecolors='grey', lw = 0)
-
-
-
-
-
-
-
-
-# #title1 = 'Sonar measurements' 
-# #fig.suptitle(title1, fontsize=24)
-
-
-
-
-
-# Establish bedload relations
 
 
 def load_pickle(sourcepath, run, suffix):
@@ -117,6 +53,7 @@ def load_pickle(sourcepath, run, suffix):
         pkl = pickle.load(infile)
     return pkl 
 
+
 def save_fig(fig, outputpath, run, figname):
     """Saves the figure to disk"""
     wd = os.path.join(outputpath, run, 'plots', 'global_parameters')
@@ -126,10 +63,12 @@ def save_fig(fig, outputpath, run, figname):
                 bbox_inches='tight', pad_inches=0.1, frameon=False)
     print 'File : {} written to {}'.format(f, wd)
 
+    
 def ashida_michiue(tau, tau_star_c=0.05):
     """Computes the Ashida & Michiue Bedload"""
     qbstar = 17 * ( tau - tau_star_c) * (np.sqrt(tau) - np.sqrt(tau_star_c) )
     return qbstar
+
 
 def mpm_wong(tau, tau_star_c=0.0495):
     """Computes the Ashida & Michiue Bedload"""
@@ -157,8 +96,44 @@ bedload_rels['MPM-W'] = {'alpha':np.float(3.97),
                          'name': 'MPM, modified by Wong',
                          'fcall':mpm_wong,
                          'color': 'black',
-                         'linestyle': '-',
+                         'linestyle': '-',                         
                      }
+# bedload_rels['no-tau-ref'] = {'alpha':np.float(3.97),
+#                          'tau_star_c':np.float(0.0495),
+#                          'n':np.float(1.5),
+#                          'eq': eq, 
+#                          'name': 'Curve fit',
+#                          'fcall':mpm_wong,
+#                          'color': 'black',
+#                          'linestyle': '-',                         
+#                      }
+
+def my_plotter(ax, data1, data2, param_dict):
+    """
+    A helper function to make a graph
+
+    Parameters
+    ----------
+    ax : Axes
+        The axes to draw to
+
+    data1 : array
+       The x data
+
+    data2 : array
+       The y data
+
+    param_dict : dict
+       Dictionary of kwargs to pass to ax.plot
+
+    Returns
+    -------
+    out : list
+        list of artists added
+    """
+    out = ax.plot(data1, data2, **param_dict)
+    return out
+
 
 def plot_load_relations(ax, bedload_rels):
     """Plots load relation curves"""
@@ -189,6 +164,17 @@ def plot_stresses(ax, gp, stats, marker, runtype):
 #        ax.scatter(x, y, s=48, facecolor = 'blue', edgecolor = 'blue', lw = 0)
     return
 
+def plot_theta(ax, gp, stats, marker, runtype):
+    """Plot the points in the stability diagram"""
+    for key in sorted(stats, key=NumericalSort):
+        x = np.mean(stats[key]['Mean']['EH_tau_star_b_s'])
+        y = np.mean(stats[key]['Mean']['taub_star'])
+        units = r'\,\si{\g \per \minute}'
+        label = r'\num{} {}: {}'.format(key, units, runtype)
+        ax.plot(x, y, markersize=6, label=label, linestyle = 'None',
+                marker=marker, markeredgecolor='gray', markeredgewidth=0.2)
+    return
+    
 
 def label_axes(ax, xlabel, ylabel, fontsize):
     """Label axes and title figure"""
@@ -305,13 +291,13 @@ def process_points(mpm, gilbert, viparelli):
         points[:,1] = compute_chezy_friction_coeff(points[:,1])
     return mpm, gilbert, viparelli
     
-    
 
 def plot_others_points(ax, x, y, label, marker='o'):
     """Process and plot experimental points"""
     ax.plot(x, y, label=label, linestyle = 'None', marker = marker,
     markersize=6, markeredgecolor = 'gray', markeredgewidth=0.2)
     return
+
     
 def plot_my_points(ax, s, marker, runtype):
     """Plots my points"""
@@ -324,40 +310,147 @@ def plot_my_points(ax, s, marker, runtype):
                 markeredgecolor='gray', markeredgewidth=0.2)
     return
 
+
 def print_table(gp, stats, run):
     """Write line to file"""
     # Define LaTeX headers
+    c0 = r'Q_w/(\si{\l \per \s}),'
     c1 = r'G_f/(\si{\g \per \min}),'
     c2 = r'q_b^*,'
-    c3 = r'u^*_{\text{b}}/(\si{\m\per\s}),'
-    c4 = r'u^*_{\text{bs}}/(\si{\m\per\s}),'
+    c3 = r'u^*_{\text{b}}/(\si{\cm\per\s}),'
+    c4 = r'u^*_{\text{bs}}/(\si{\cm\per\s}),'
     c5= r'$\tau^*_{\text{b}}$,'
     c6 = r'$\tau^*_{\text{bs}}$,'
     c7 = r'$\phi$,'
-    c8 = r'H / \si{\cm},'
+    c8 = r'H / \si{\m},'
     c9 = r'U / \si{\m \per \s},'
-    c10 = r'Fr'
-    hdr = c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + c10
+    c10 = r'Fr,'
+    c11 = r'A,'
+    c12 = r'Ab,' 
+    c13 = r'Aw,'
+    c14 = r'Rhb,'
+    c15 = r'Rhb_s,'
+    c16 = r'Cfb,'
+    c17 = r'Cfw,' 
+    c18 = r'Cfbs,' 
+    c19 = r'E,'  
+    c20 = r'Re,'  
+    c21 = r'Rew,'
+    c22 = r'Reb,' 
+    c23 = r'S,'   
+    c24 = r'Sf,'  
+    c25 = r'Sl'   
+
+    # Create header row with column names in LaTeX, as above.
+    hdr = c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + c9 + c10 + c11 + c12 + \
+          c13 + c14 + c15 + c16 + c17 + c18 + c19 + c20 + c21 + c22 + c23 + \
+          c24 + c25
     table=[]
-    for key in sorted(stats, key=NumericalSort):
-        Gf = np.int(key)
-        qbstar = stats[key]['Meta']['qb_star']
-        ub_star = np.mean(stats[key]['Mean']['ub_star']) *100
-        ub_star_s = np.mean(stats[key]['Mean']['ub_star_s']) * 100
-        tau_star_b = np.mean(stats[key]['Mean']['taub_star']) 
-        tau_star_bs = np.mean(stats[key]['Mean']['taub_star_s'])
-        phi = np.mean(stats[key]['Mean']['phi'])
-        H = np.mean(stats[key]['Mean']['H']) * 100.
-        U = np.mean(stats[key]['Mean']['U'])
-        Fr = np.mean(stats[key]['Mean']['Fr'])
-        row = np.array([Gf, qbstar, ub_star, ub_star_s, tau_star_b,
-                        tau_star_bs, phi, H, U, Fr])
-        table.append(row)
+    for flowrate in sorted(stats, key=NumericalSort):
+        for key in sorted(stats[flowrate], key=NumericalSort):
+            Q = np.float(flowrate)
+            Gf = np.int(key)
+            qbstar = stats[flowrate][key]['Meta']['qb_star']
+            ub_star = np.mean(stats[flowrate][key]['Mean']['ub_star']) * 100
+            ub_star_s = np.mean(stats[flowrate][key]['Mean']['ub_star_s']) * 100
+            tau_star_b = np.mean(stats[flowrate][key]['Mean']['taub_star']) 
+            tau_star_bs = np.mean(stats[flowrate][key]['Mean']['taub_star_s'])
+            phi = np.mean(stats[flowrate][key]['Mean']['phi'])
+            H = np.mean(stats[flowrate][key]['Mean']['H']) 
+            U = np.mean(stats[flowrate][key]['Mean']['U'])
+            Fr = np.mean(stats[flowrate][key]['Mean']['Fr'])
+            A = np.mean(stats[flowrate][key]['Mean']['A']) 
+            Ab = np.mean(stats[flowrate][key]['Mean']['Ab'])
+            Aw = np.mean(stats[flowrate][key]['Mean']['Aw'])
+            Rhb = np.mean(stats[flowrate][key]['Mean']['Rhb'])
+            Rhbs = np.mean(stats[flowrate][key]['Mean']['Rhb_s'])
+            Cfb = np.mean(stats[flowrate][key]['Mean']['Cfb'])
+            Cfw = np.mean(stats[flowrate][key]['Mean']['Cfw'])
+            Cfbs = np.mean(stats[flowrate][key]['Mean']['Cfbs'])
+            E = np.mean(stats[flowrate][key]['Mean']['E'])
+            Re = np.mean(stats[flowrate][key]['Mean']['Re'])
+            Rew = np.mean(stats[flowrate][key]['Mean']['Rew'])
+            Reb = np.mean(stats[flowrate][key]['Mean']['Reb'])
+            S = np.mean(stats[flowrate][key]['Mean']['S'])
+            Sf = np.mean(stats[flowrate][key]['Mean']['Sf'])
+            Sl = np.mean(stats[flowrate][key]['Mean']['Sl'])
+            row = np.array([ Q, Gf, qbstar, ub_star, ub_star_s, tau_star_b,
+                             tau_star_bs, phi, H, U, Fr, A, Ab, Aw, Rhb, Rhbs,
+                             Cfb, Cfw, Cfbs, E, Re, Rew, Reb, S, Sf, Sl ] )
+            table.append(row)
     output = np.vstack(table)
+    # Aggradation overwrites this file. Fix!
     fname = '/Users/ricardo/Documents/Experiments/Data/output/profiles/equilibrium/tables/table_eq.csv'
     np.savetxt(fname, output, delimiter=',', header=hdr)
     return
     
+
+def no_tau_ref_fit(eq_stats, ag_stats, ax):
+    """Compute the fitting parameters for a no-reference-Shields-Number bedload
+    relation to the experimental points.
+
+    Parameters:
+    -----------
+
+
+    Return:
+    -------
+    b : power-law coefficient. (Float)
+    m : power-law exponent. (Float)
+    eq: LaTeX string containing the power-law equation
+    actually, it doesn't return anything. It just plots. 
+
+    Comments:
+    ---------
+    This could be tried with numpy.linalg.lstsq:
+    (http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.lstsq.html#numpy.linalg.lstsq)
+    Or with one of the SciPi tools. 
+
+
+    This function does way too much. 
+    """
+    #Create lists
+    tau_star_b_s = []
+    q_b_star = []
+    # create a dictionary
+    d = {}
+    pdb.set_trace()
+    for qw in sorted(eq_stats, key=NumericalSort):#, ag_stats]:
+        for stats in sorted(eq_stats[qw], key=NumericalSort):#, ag_stats[qw]]:
+            # Loop over dictionary to store the values in useful keys
+            for key in sorted(stats, key=NumericalSort):
+                # Get x and y values
+                x = np.mean(stats[key]['Mean']['taub_star_s'])
+                y = stats[key]['Meta']['qb_star']
+                # Create keys 
+                d.setdefault(key, {}).setdefault('q_star_b', [])        
+                d.setdefault(key, {}).setdefault('tau_star_b_s', [])
+                # append the values to the list
+                d[key]['q_star_b'].append(y)
+                d[key]['tau_star_b_s'].append(x)
+    # Loop over dictionary to replace stored values with average values
+    for key in sorted(d, key=NumericalSort):
+        d[key]['q_star_b'] = np.mean(d[key]['q_star_b'])
+        d[key]['tau_star_b_s'] = np.mean(d[key]['tau_star_b_s'])
+    # Loop a third time to store values into list
+    for key in sorted(d, key=NumericalSort):
+        tau_star_b_s.append(d[key]['tau_star_b_s'])
+        q_b_star.append(d[key]['q_star_b'])
+    b, m = P.polyfit(np.log(tau_star_b_s), np.log(q_b_star), 1)
+    b = np.exp(b)
+    eq = r'$q_b^* = {:.3f}\,{{\tau_{{bs}}^*}}^{{{:.3f}}}$'.format(b, m)
+
+    # Plot the curve fit into the load relation axes
+    tau = np.linspace(0.05, .8, 500)
+    qbstar_fit = b * tau ** m
+    label = eq
+    color = 'red'
+    linestyle = '-'
+    lw = 2
+    ax.loglog(tau, qbstar_fit, label=label, color = color, linestyle =
+              linestyle, lw = lw)    
+    return     
+
 
 def main():
     """Main routine for plotting global parameters"""
@@ -372,13 +465,15 @@ def main():
     eq_gp = load_pickle(sourcepath, 'equilibrium', 'global_parameters')
     # Load the pickle with the equilibrium stats summary
     eq_stats = load_pickle(sourcepath, 'equilibrium', 'global_stats_summary')
+
     # Print equilibrium results table to file
     print_table(eq_gp, eq_stats, 'equilibrium')
-
+    sys.exit()
     # Load the pickle with the aggradational global parameters
     ag_gp = load_pickle(sourcepath, 'aggradation', 'global_parameters')
     # Load the pickle with the aggradational stats summary
     ag_stats = load_pickle(sourcepath, 'aggradation', 'global_stats_summary')
+
     # Print aggradational results table to file
     print_table(ag_gp, ag_stats, 'aggradation')
 
@@ -389,6 +484,8 @@ def main():
     ax1 = fig.add_subplot(111, aspect = 'equal')
     # Plot the load relation curves (Ashida & Michiue and MPM-W, for now)
     plot_load_relations(ax1, bedload_rels)
+    # Plot the no-reference-Shields-number curve fit. 
+    no_tau_ref_fit(eq_stats, ag_stats, ax1)
     # Plot the relevant points
     plot_stresses(ax1, eq_gp, eq_stats, ur'o', 'equilibrium')
     plot_stresses(ax1, ag_gp, ag_stats, ur'v', 'aggradation')    
@@ -405,6 +502,47 @@ def main():
 
     # Save the figure of experimental points
     save_fig(fig, outputpath, 'combined', 'experimental_points')
+
+
+    ################################################
+    # Plot Total bed shear stress against velocity #
+    ################################################
+
+    fig6 = plt.figure(tight_layout=True)
+    ax6 = fig6.add_subplot(111)
+    for stats in [eq_stats, ag_stats]:
+        for key in sorted(stats, key=NumericalSort):
+            units = r'\,\si{\g \per \minute}'
+            #label = r'\num{} {}: {}'.format(key, units)
+            ax6.plot(stats[key]['Mean']['U'], stats[key]['Mean']['taub'],
+                     marker = r'o',
+                     markersize = 6, ls = 'None', mec = 'gray',
+                     mew = 0.2) 
+    xlabel6 = r'$U$'#r'q$^*_b$'
+    ylabel6 = r'$\tau_{b}$'# - \tau_{ref}^*$'
+    label_axes(ax6, xlabel6, ylabel6, 12)           
+    ax6.legend(fontsize=10, loc='upper left', bbox_to_anchor = (1.05, 1),
+               numpoints = 1, frameon=False)            
+    format_plot(fig6, (0.1, 10), (01, 100), 'log', 'log')
+    save_fig(fig6, outputpath, 'combined', 'taub_vs_U')
+    
+
+    ###########################
+    # Plot stability diagram #
+    ###########################
+    stability = plt.figure(tight_layout=True)
+    ax5 = stability.add_subplot(111)
+    plot_theta(ax5, eq_gp, eq_stats, ur'o', 'equilibrium')
+    plot_theta(ax5, ag_gp, ag_stats, ur'v', 'aggradation')    
+    xlabel5 = r'$\tau_{bs}^*$' 
+    ylabel5 = r'$\tau_{b}^*$'
+    label_axes(ax5, xlabel5, ylabel5, 12)
+    ax5.legend(fontsize=10, loc='upper left', bbox_to_anchor = (1.05, 1),
+            numpoints = 1, frameon=False)
+    format_plot(stability, (1e-3, 1e-0), (0.1, 10), 'log', 'log')
+    save_fig(stability, outputpath, 'combined', 'stability_diagram')
+
+    
 
     ###############
     # Plot of phi #
@@ -474,6 +612,7 @@ def main():
     format_plot(friction, (1, 100), (1e-3, 1e-1), 'log', 'log')
     # Save the figure of friction
     save_fig(friction, outputpath, 'combined', 'friction_plots')
+
 
     plt.close('all')
     

@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 """ This script reads the profiles stored in the "raw" folder and coverts them
@@ -47,6 +48,7 @@ def main():
     os.chdir(wd)
     # List all profiles in source path, sorted by feedrate
     profiles = sorted( glob.glob('*.csv'), key=NumericalSort)
+
     # Create equilibrium and agradation dictionaries:
     eq = {}
     ag = {}

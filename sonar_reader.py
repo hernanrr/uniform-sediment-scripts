@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 """ This script reads the profiles stored in the "raw" folder and coverts them
