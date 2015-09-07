@@ -292,10 +292,10 @@ def main():
                     'taub_star', 'taub', 'tauw', 'ub_star', 'S')
 
         for key in profiles:
-            x = profiles[key]['x']
+            x = profiles[key]['x'][us_lim:-ds_lim] 
             # Convert the measurements to meters for xi and eta
-            xi = profiles[key]['wse'] / 100.
-            eta = profiles[key]['bed'] / 100.
+            xi = profiles[key]['wse'][us_lim:-ds_lim] / 100.
+            eta = profiles[key]['bed'][us_lim:-ds_lim] / 100.
             # Compute water depth
             H = np.mean(xi - eta)
             # Compute total area
