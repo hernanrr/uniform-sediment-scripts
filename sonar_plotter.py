@@ -82,22 +82,7 @@ spines_to_keep = ['bottom', 'left']
 
 almost_black = '#262626'
 
-# Wavelengths, in meters
-eq_lambda = {'500': 0.860, '1000': 0.860, '1500': 0.773, '2000': 0.620, '2500':
-              0.520, '3000': 0.460, '4000': 0.378, '6000': 0.418, '8000':
-              0.427, '10000': 0.317, '12000': 0, '16000': 0, '20000': 0 }
 
-# Amplitudes, in cm
-eq_amplitude = {'500': 4.3, '1000': 3.8, '1500': np.nan, '2000'
-                 : np.nan, '2500': np.nan, '3000': 4, '4000': 2.75, '6000': 3.85
-                , '8000': 3.825, '10000': np.nan, '12000': 4.633, '16000':
-                 np.nan , '20000 ' : np.nan}
-
-# H_nod, in meters
-eq_h_nod = {'500': 0.1263, '1000': 0.1235, '1500': 0.1471, '2000': 0.1209,
-            '2500': 0.1219, '3000': 0.1094, '4000': 0.1038, '6000': 0.1039,
-            '8000': 0.0916, '10000': 0.0938, '12000': 0.0940, '16000': 0.0853,
-            '20000': 0.0858}
 
 def load_sonars(fpickle):
     """Load the sonar data from the pickle"""
@@ -121,16 +106,11 @@ def plot_timeseries(d, h, run, name):
 #    run_number = run_name[2]
     run_date = datetime.datetime.strptime(run_name[1],'%Y%m%d').date()
     feed_rate_units = r'\,\si{\g \per \minute}'
-    flow_rate_units = r'\,\si{\l \per \s}'
     gs = np.int(run_name[0])
-    qw = np.int(run_name[2][0:2])
     feed_rate = r'\num{}{}'.format(gs, feed_rate_units)
-    flow_rate = r'\num{}{}'.format(qw, flow_rate_units)
     probs = 'probability distributions'
-    plot_title = '{}, {} {} run: Bed elevation {} and {}'.format(feed_rate,
-                                                                 flow_rate,
-                                                                 run_type, name,
-                                                                 probs) 
+    plot_title = '{} {} run: Bed elevation {} and {}'.format(feed_rate, run_type,
+                                                             name, probs) 
     
     plot_file_name = '{}_{}.pdf'.format(run, name)
     
@@ -466,7 +446,7 @@ def plot_pdf_comparison(h, runtype):
     runs_to_plot = [
         '500',
         '1000',
-        '1500',
+        #'1500',
         #'2000',
         #'2500',
         '3000',
@@ -481,7 +461,7 @@ def plot_pdf_comparison(h, runtype):
 
     # Units for the legend
     feed_rate_units = r'\,\si{\g \per \minute}'
-    flow_rate_units = r'\,\si{\l \per \s}'
+
 
     # Create a figure.
     fig1 = plt.figure(figsize=figsize, tight_layout=True)
@@ -517,57 +497,55 @@ def plot_pdf_comparison(h, runtype):
 
 
     # Populate the figure
-    for flowrate in sorted(h, key=NumericalSort):
-        for feedrate in sorted(h[flowrate], key=NumericalSort):
-            if feedrate in runs_to_plot:
-                print 'plotting {}'.format(feedrate)
-                label = r'\num{}{}\,\num{}{}'.format(feedrate, feed_rate_units, flowrate,
-                                           flow_rate_units)
-                # Plot the cummulative probability distribution function
-                ax1.plot(h[flowrate][feedrate]['probe_1']['Pe'], h[flowrate][feedrate]['probe_1']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax3.plot(h[flowrate][feedrate]['probe_2']['Pe'], h[flowrate][feedrate]['probe_2']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax5.plot(h[flowrate][feedrate]['probe_3']['Pe'], h[flowrate][feedrate]['probe_3']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax7.plot(h[flowrate][feedrate]['probe_4']['Pe'], h[flowrate][feedrate]['probe_4']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax9.plot(h[flowrate][feedrate]['probe_5']['Pe'], h[flowrate][feedrate]['probe_5']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax11.plot(h[flowrate][feedrate]['probe_6']['Pe'], h[flowrate][feedrate]['probe_6']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
+    for feedrate in sorted(h, key=NumericalSort):
+        if feedrate in runs_to_plot:
+            print 'plotting {}'.format(feedrate)
+            label = r'\num{}{}'.format(feedrate, feed_rate_units)
+            # Plot the cummulative probability distribution function
+            ax1.plot(h[feedrate]['probe_1']['Pe'], h[feedrate]['probe_1']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax3.plot(h[feedrate]['probe_2']['Pe'], h[feedrate]['probe_2']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax5.plot(h[feedrate]['probe_3']['Pe'], h[feedrate]['probe_3']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax7.plot(h[feedrate]['probe_4']['Pe'], h[feedrate]['probe_4']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax9.plot(h[feedrate]['probe_5']['Pe'], h[feedrate]['probe_5']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax11.plot(h[feedrate]['probe_6']['Pe'], h[feedrate]['probe_6']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            
 
 
-
-
-                # Plot the probability distribution function
-                ax2.plot(h[flowrate][feedrate]['probe_1']['pe'], h[flowrate][feedrate]['probe_1']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax4.plot(h[flowrate][feedrate]['probe_2']['pe'], h[flowrate][feedrate]['probe_2']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax6.plot(h[flowrate][feedrate]['probe_3']['pe'], h[flowrate][feedrate]['probe_3']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax8.plot(h[flowrate][feedrate]['probe_4']['pe'], h[flowrate][feedrate]['probe_4']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax10.plot(h[flowrate][feedrate]['probe_5']['pe'], h[flowrate][feedrate]['probe_5']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)
-                ax12.plot(h[flowrate][feedrate]['probe_6']['pe'], h[flowrate][feedrate]['probe_6']['y'],
-                         ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
-                         label=label)         
-
-            else:
-                pass
+    
+            # Plot the probability distribution function
+            ax2.plot(h[feedrate]['probe_1']['pe'], h[feedrate]['probe_1']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax4.plot(h[feedrate]['probe_2']['pe'], h[feedrate]['probe_2']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax6.plot(h[feedrate]['probe_3']['pe'], h[feedrate]['probe_3']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax8.plot(h[feedrate]['probe_4']['pe'], h[feedrate]['probe_4']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax10.plot(h[feedrate]['probe_5']['pe'], h[feedrate]['probe_5']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)
+            ax12.plot(h[feedrate]['probe_6']['pe'], h[feedrate]['probe_6']['y'],
+                     ms = ms, marker = m, ls = ls, lw = lw, mec = mec, mew=mew,
+                     label=label)         
+            
+        else:
+            pass
         
 
 
@@ -624,7 +602,7 @@ def plot_pdf_comparison(h, runtype):
             ax.spines[spine].set_visible(False)
         for spine in spines_to_keep:
             ax.spines[spine].set_color('black')
-        ax.legend(fontsize=10, loc='upper left', bbox_to_anchor = (1.05, 1), frameon=False)
+        ax.legend(fontsize=10, frameon=False)
         ax.tick_params(axis='both', colors='black')
 
 
@@ -661,9 +639,10 @@ def plot_pdf_comparison(h, runtype):
         elif fig==fig12:
             probe = 'probe_6'            
         if fig in [fig1, fig3, fig5, fig7, fig9, fig11]:               
-            plot_file_name = 'cdf_comparison_{}_{}.pdf'.format(probe, runtype)
+            plot_file_name = 'cdf_plot_netherlands_{}_{}.pdf'.format(probe, runtype)
         elif fig in [fig2, fig4, fig6, fig8, fig10, fig12]:
-            plot_file_name = 'pdf_comparison_{}_{}.pdf'.format(probe, runtype)
+            plot_file_name = 'pdf_plot_netherlands_{}_{}.pdf'.format(probe,
+                                                                     runtype)
             
         fig.savefig(plot_file_name, dpi=100, format='pdf',
                      transparent=True,
@@ -819,25 +798,25 @@ def main():
     """Main routine"""
     print 'Script started'
     # Load the profiles
-    runs = ['equilibrium']#, 'aggradation']
-    for run_type in runs:
+    runs = ['equilibrium', 'aggradation']
+    for run in runs:
         # Choose source path
-        if run_type=='equilibrium':
+        if run=='equilibrium':
             os.chdir(eq_in_path)            
         else:
             os.chdir(ag_in_path)
         # Get the pickles
         # first sonar
-        f = run_type + '_sonars.pickle'
+        f = run + '_sonars.pickle'
         sonars = load_sonars(f)
         # then general parameters
-        f1 = os.path.join(gp_source, run_type, run_type + '_global_stats_summary.pickle')
+        f1 = os.path.join(gp_source, run, run + '_global_stats_summary.pickle')
         gp = load_sonars(f1)
         # Create a storage dictionary
         d = {}
         probability = {}
         # Choose the output path
-        if run_type=='equilibrium':
+        if run=='equilibrium':
             os.chdir(eq_out_path)
             pickle_path = eq_in_path
         else:
@@ -848,8 +827,7 @@ def main():
         # dictionary. Start by creating a new dictionary
         data = {}  # Different for equilibrium and aggradation runs.
         # New dictionary as dictionary key to store fluctuation data
-        fluctuations = {} 
-        histograms = {}
+        fluctuations = {} #Gets rewritten at every run. Is this expected?
 
         for run in sorted(sonars, key=NumericalSort):
             # Give sensible names to the data
@@ -892,7 +870,7 @@ def main():
                                                      1)
                     bed_fit = (T-T[0]) * m_bed_fit + b_bed_fit
                     bed_equation = r'$\eta = {:.4f}x + {:.3f}$'.format(m_bed_fit, b_bed_fit)
-                    #print bed_equation
+                    print bed_equation
                     mu = np.nanmean(value)
                     # Detrend to get fluctuations around the mean.
                     # Uncomment next line for fluctuation around zero
@@ -900,6 +878,7 @@ def main():
                     # Uncomment next time for fluctuation around a trend.
                     fluctuations[flowrate][feedrate][key] = value - bed_fit
             # Compute the histogram of the fluctuations
+            histograms = {}
             histograms.setdefault(flowrate, {}).setdefault(feedrate, {})
             # A container to collect all values computed by this plotter
             d.setdefault(flowrate, {}).setdefault(feedrate, {})
@@ -923,6 +902,7 @@ def main():
                     # be necessary after the sonar data is cleaned. We live
                     # with it for now. EDIT: Sonar data has been cleaned.
                     value[value[idx]<-50], value[value[idx]>50] = 0., 0. 
+                    pdb.set_trace()
                     variance = np.nansum( value ** 2. ) / ( n - 1. )
                     sigma = np.sqrt(variance)
                     y = ( bin_edges[0:-1] + bin_edges[1:] ) / 2.
@@ -935,33 +915,12 @@ def main():
                     d[flowrate][feedrate].setdefault(key, {})
                     d[flowrate][feedrate][key] = histograms[flowrate][feedrate][key]
 
-                    
-            # plot_timeseries(fluctuations[flowrate][feedrate],
-            #                 histograms[flowrate][feedrate], run,
-            #                 'fluctuations')
-            
-        # Save the data for either the equilibrium or aggradational run
-        pickle_names = ['histograms', 'fluctuations', 'data', 'd']
-        pickle_contents = [histograms, fluctuations, data, d]
-
-        for pickle_name, pickle_content in zip(pickle_names, pickle_contents):
-            pickle_hdr = os.path.join(pickle_path, run_type + '_' +
-                                      pickle_name) + '.pickle'  
-            with open(pickle_hdr, 'wb') as pickle_outfile:
-                pickle.dump(pickle_content, pickle_outfile, -1)
-
-        for qw in sorted(histograms, key=NumericalSort):
-            for qf in sorted(histograms[qw], key=NumericalSort):
-                for probe in sorted(histograms[qw][qf], key=NumericalSort):
-                    s = histograms[qw][qf][probe]['sigma']
-                    #hist = histograms[qw][qf][probe]['hist']
-                    pe = histograms[qw][qf][probe]['pe']
-                    y = histograms[qw][qf][probe]['y']                    
-                    print '{},{},{},{}'.format(qf, qw, probe, s)
-                    #print '{},{}'.format(pe, y)            
+        #     plot_timeseries(fluctuations[flowrate][feedrate],
+        #                     histograms[flowrate][feedrate], run,
+        #                     'fluctuations')    
         #     # Exits the loop for all feedrates
         # plot_sigma(gp, d)
-        plot_pdf_comparison(d, runtype)
+        # plot_pdf_comparison(d, runtype)
 
 
     print 'Script completed successfully'

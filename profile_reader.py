@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 """ This script reads the profiles stored in the "raw" folder and coverts them
@@ -36,8 +35,8 @@ def NumericalSort(value):
 
 
 home = os.path.expanduser("~")
-sourcepath = (home + '/Documents/Experiments/Data/raw/profiles')
-outputpath = (home + '/Documents/Experiments/Data/input/profiles')
+sourcepath = (home + '/Documents/Experiments/Data/0-raw/profiles')
+outputpath = (home + '/Documents/Experiments/Data/1-input/profiles')
 
 
 

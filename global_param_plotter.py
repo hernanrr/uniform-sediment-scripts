@@ -382,6 +382,7 @@ def print_table(gp, stats, run):
     # Aggradation overwrites this file. Fix!
     fname = '/Users/ricardo/Documents/Experiments/Data/output/profiles/equilibrium/tables/table_eq.csv'
     np.savetxt(fname, output, delimiter=',', header=hdr)
+    print 'Table written to file'
     return
     
 

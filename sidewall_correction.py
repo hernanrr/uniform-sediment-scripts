@@ -6,6 +6,7 @@
 from __future__ import division
 import numpy as np
 import newton_raphson as nr
+import pdb
 
 g = np.float(9.81) # Gravity in m/s2
 nu = np.float(1e-6) # Kinematic viscosity of water
@@ -80,7 +81,6 @@ def remove_wall_effects(x, H, U, E, lim, B0=1.0):
     # Sidewall-corrected shear velocity, (bed-region)
     ub_star = np.full_like(x, 0., dtype=float)
 
-    pdb.set_trace()
     # Perform the computations Compute total energy slope. The -1
     # accounts for python's indexing quirks
     S = ( E[0] - E[lim-1] ) / ( x[lim-1] - x[0] )

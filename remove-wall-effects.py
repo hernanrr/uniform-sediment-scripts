@@ -5,7 +5,6 @@
 from __future__ import division
 import os
 import pdb
-import re
 import numpy as np
 try:
     import cPickle as pickle
@@ -15,21 +14,19 @@ import itertools
 
 import sidewall_correction as sw
 import newton_raphson as nr
+from const import g, nu
 
 
 home = os.path.expanduser("~")
-flumepath = (home + '/Documents/Experiments/Data/input/flume')
-sourcepath = (home + '/Documents/Experiments/Data/input/profiles')
-outputpath = (home + '/Documents/Experiments/Data/processed/profiles')
+flumepath = (home + '/Documents/Experiments/Data/1-input/flume')
+sourcepath = (home + '/Documents/Experiments/Data/1-input/profiles')
+outputpath = (home + '/Documents/Experiments/Data/2-processed/profiles')
 eq_in_path = os.path.join(sourcepath, 'equilibrium')
 ag_in_path = os.path.join(sourcepath, 'aggradation')
 eq_out_path = os.path.join(outputpath, 'equilibrium')
 ag_out_path = os.path.join(outputpath, 'aggradation')
 
 # Some constants. Should probably be read from a file as a dictionary...
-
-g = np.float(9.81) # Gravity in m/s2
-nu = np.float(1e-6) # Kinematic viscosity of water
 
 rho = np.float(1.0e3) # Density of water, in kg/m3
 B0 = np.float(19e-2) # Channel width in m
@@ -38,12 +35,6 @@ xi_d = np.float(32e-2) # initial downstream tailgate elevation in m
 D = np.float(1.11e-3) # Characteristic diameter of the sediment in m
 rho_s = np.float(2.65e3) # Density of sediment, in kg/m3
 R = (rho_s - rho) / rho # Submerged relative density of sediment 
-
-numbers = re.compile(r'(\d+)')
-def NumericalSort(value):
-    parts = numbers.split(value)
-    parts[1::2] = map(int, parts[1::2])
-    return parts
 
 
 def load_pickle(fpickle):
@@ -67,105 +58,6 @@ def fE(xi, U):
     """Computes the specific energy for the cross-section"""
     return xi + U ** 2/(2*g)
 
-def fChezy(H, U, B, S):
-    """Computes the Chezy friction coefficient"""
-    return ( ( S * g ) / U ** 2 ) * ( (B * H) / ( B + 2 * H  ) )
-
-def fRe(B, H, U, nu=1e-6):
-    """Computes Reynolds number"""
-    return ( U / nu ) * ( (B * H) / (B + 2 * H ) )
-
-def fChezy_wall(xRef):
-    """Computes the Chezy friction coefficient for the wall region"""
-    # Do a first estimate of fw0 with the Blasius equation, as modified by
-    # Chiew and Parker in 1994
-    fw0 = 0.301 * xRef ** 0.2
-    Rew0 = fw0 / xRef
-    convergence = False
-    while not convergence:
-        Rew1 = Rew0
-        fw0 = nr.newton_raphson(lambda fw: fNikuradse(fw, Rew0), 0.01)
-        Rew0 = fw0 / xRef
-        convergence = nr.good_enough(Rew1, Rew0)
-    fw = fw0 / 8    
-    return fw, Rew0
-
-
-def fNikuradse(fw, Rew):
-    """Nikuradse equation modified by for solving in a Newton-Raphson scheme.
-
-    """
-    nikuradse =  ( fw * ( 0.86 * np.log(4 * Rew * np.sqrt(fw) ) - 0.8 ) ** 2
-                 - 1)
-    return nikuradse
-
-
-def remove_wall_effects(x, H, U, E, lim, B0=1.0):
-    """Remove wall effects according to Vanoni and Brooks"""
-    # Define some containers:
-    # Area, bed-region
-    Ab = np.full_like(x, 0., dtype=float)
-    # Area, wall-region
-    Aw = np.full_like(x, 0., dtype=float)
-    # Chezy friction coefficient, total
-    Cf = np.full_like(x, 0., dtype=float)
-    # Chezy friction coefficient, bed-region
-    Cfb = np.full_like(x, 0., dtype=float)
-    # Chezy friction coefficient, wall-region
-    Cfw = np.full_like(x, 0., dtype=float)
-    # Reynolds number, total
-    Re = np.full_like(x, 0., dtype=float)
-    # Reynolds number, bed region
-    Reb = np.full_like(x, 0., dtype=float)
-    # Reynolds number, wall region
-    Rew = np.full_like(x, 0., dtype=float)
-    # Ratio of Chezy friction coefficient to Reynolds number
-    Ref1 = np.full_like(x, 0., dtype=float)
-    # Shear stress, bed-region
-    taub = np.full_like(x, 0., dtype=float)
-    # Shear stress, wall-region
-    tauw = np.full_like(x, 0., dtype=float)
-    # Sidewall-corrected Shields number, (bed-region)
-    taub_star = np.full_like(x, 0., dtype=float)
-    # Sidewall-corrected shear velocity, (bed-region)
-    ub_star = np.full_like(x, 0., dtype=float)
-
-    # Perform the computations Compute total energy slope. The -1
-    # accounts for python's indexing quirks
-    S = ( E[0] - E[lim-1] ) / ( x[lim-1] - x[0] )
-    # Compute total friction coefficient
-    Cf[:lim] = fChezy(H[:lim], U[:lim], B0, S)
-    # Compute total Reynolds number
-    Re[:lim] = fRe(B0, H[:lim], U[:lim], nu)
-    # Compute the ratio of the friction coefficient to the
-    # Reynolds No.
-    Ref1[:lim] = Cf[:lim] / Re[:lim]
-    # Compute wall-region friction coefficient, node per node
-    # Get the wall-region Reynold's number while we are at it.
-    for i, value in enumerate(Cf[:lim]):
-       Cfw[i], Rew[i] = fChezy_wall(Ref1[i] * 8)
-    # Find the wall-region area
-    Aw[:lim] = Rew[:lim] * nu * (2 * H[:lim] ) / U[:lim] 
-    # Find the bed-region area by substrating wall-region area from
-    # total area
-    Ab[:lim] = B0 * H[:lim] - Aw[:lim]
-    # Compute the bed-region friction factor
-    Cfb[:lim] = Cf[:lim] + ( ( 2 * H[:lim] ) / B0 ) * ( Cf[:lim] -
-                                                        Cfw[:lim] )
-    # Compute the bed-region Reynolds number
-    Reb[:lim] = Cfb[:lim] / Ref1[:lim]
-    # Compute shear stresses for bed region
-    taub[:lim] = rho * Cfb[:lim] * U[:lim] ** 2
-    # Compute shear stresses for wall region
-    tauw[:lim] = rho * Cfw[:lim] * U[:lim] ** 2
-    # Compute the sidewall-corrected Shields number for the bed region
-    taub_star[:lim] = Cfb[:lim] * U[:lim] ** 2 / ( R * g * D)
-    # Compute the sidewall-corrected shear velocity
-    ub_star[:lim] = np.sqrt( taub[:lim] / rho )
-   
-    # Collect the results
-    r = Cf, Cfb, Cfw, Re, Reb, Rew, Ab, Aw, taub_star, taub, tauw, ub_star, S
-    return r
 
 def compute_friction_slope(E, x):
     """Computes the friction slope"""
@@ -215,12 +107,12 @@ def compute_bed_slope(eta, x):
     
 
         
-def compute_Einstein_skin_friction(swc, lim):
+def compute_Einstein_skin_friction(swc, ds_lim):
     """Remove form drag effects from the side-wall-corrected results"""
     # Create a dictionary to store the result
     d = {}
     # Specify roughness height
-    nk = np.float(2.0) #4.5:6, 6.4:8, 9.1:10
+    nk = np.float(3.5) #4.5:6, 6.4:8, 9.1:10
     # Specify coefficient to resistance relationship
     alpha_r = 8.1
     # Specify roughness height
@@ -233,7 +125,7 @@ def compute_Einstein_skin_friction(swc, lim):
     d['phi'] = np.full_like(swc['taub_star'], 0., dtype=float)
     # Compute bed-region hydraulic radius
     d['Rhb'] = swc['Ab'] / B0
-    for i, Rhb in enumerate(d['Rhb'][:lim]):
+    for i, Rhb in enumerate(d['Rhb'][:ds_lim]):
         convergence = False
         while not convergence:
             Rhb1 = Rhb
@@ -252,23 +144,23 @@ def compute_Einstein_skin_friction(swc, lim):
         
     # We now choose the correct values:
     # First, specify the comparison condition
-    condition = [ d['Rhb_s'][:lim] < d['Rhb'][:lim] ]
+    condition = [ d['Rhb_s'][:ds_lim] < d['Rhb'][:ds_lim] ]
     # Then, specify the functions based on the conditions
-    choice_Rhbs = [ d['Rhb_s'][:lim], d['Rhb'][:lim] ] 
-    choice_ub_star_s = [ d['ub_star_s'][:lim], swc['ub_star'][:lim] ]
-    choice_taub_star_s = [ d['ub_star_s'][:lim] ** 2 / ( R * g * D ) , \
-                           swc['taub_star'][:lim] ]
+    choice_Rhbs = [ d['Rhb_s'][:ds_lim], d['Rhb'][:ds_lim] ] 
+    choice_ub_star_s = [ d['ub_star_s'][:ds_lim], swc['ub_star'][:ds_lim] ]
+    choice_taub_star_s = [ d['ub_star_s'][:ds_lim] ** 2 / ( R * g * D ) , \
+                           swc['taub_star'][:ds_lim] ]
 
     # Finally, apply the conditions and functions
-    d['Rhb_s'][:lim] = np.where( condition, *choice_Rhbs )
-    d['ub_star_s'][:lim] = np.where(  condition, *choice_ub_star_s )
-    d['taub_star_s'][:lim] = np.where( condition, *choice_taub_star_s )
-    d['phi'][:lim] =  d['taub_star_s'][:lim] / swc['taub_star'][:lim]
-    d['Cfbs'][:lim] = ( d['ub_star_s'][:lim] / swc['U'][:lim] ) ** 2
+    d['Rhb_s'][:ds_lim] = np.where( condition, *choice_Rhbs )
+    d['ub_star_s'][:ds_lim] = np.where(  condition, *choice_ub_star_s )
+    d['taub_star_s'][:ds_lim] = np.where( condition, *choice_taub_star_s )
+    d['phi'][:ds_lim] =  d['taub_star_s'][:ds_lim] / swc['taub_star'][:ds_lim]
+    d['Cfbs'][:ds_lim] = ( d['ub_star_s'][:ds_lim] / swc['U'][:ds_lim] ) ** 2
     # We need Cfbs to plot the skin stresses. 
     return d, ks
 
-def Engelund_Hansen_skin_friction(swc, lim):
+def Engelund_Hansen_skin_friction(swc, ds_lim):
     """Remove form drag effects from the side-wall-corrected results using the
     Engelund-Hansen decomposition
 
@@ -286,7 +178,7 @@ def Engelund_Hansen_skin_friction(swc, lim):
     # Define some vectors
     d['EH_tau_star_b_s'] = np.full_like(swc['taub_star'], 0., dtype=float)
     
-    d['EH_tau_star_b_s'][:lim] = 0.4 * swc['taub_star'][:lim] ** 2 
+    d['EH_tau_star_b_s'][:ds_lim] = 0.4 * swc['taub_star'][:ds_lim] ** 2 
     return d
 
 def fManning(u_star_b, U, Rbs, alpha_r, ks):
@@ -307,34 +199,33 @@ def write_pickle(d, run, suffix):
     return
 
 
-def compute_statistics(d, lim):
+def compute_statistics(d, ds_lim):
     """Computes statistics of the variables stored in the dictionary"""
     stats={}
-    for key in sorted(d):
-        if key=='S' or key=='Q':
-            values = d[key]
+    for key in d:
+        if key=='S':
+            pass
         else:
-            values = d[key][:lim]
-        stats[key]={}
-        # Count the number of non-zero elements in the array
-        stats[key]['N'] = np.count_nonzero( values )
-        # Compute the arithmetic mean of the values
-        stats[key]['Mean'] = np.mean( values )
-        # Compute the median of the values
-        stats[key]['Median'] = np.median( values )
-        # Compute the Standard Deviation
-        stats[key]['Std'] = np.std( values )
-        # Compute the variance
-        stats[key]['Var'] = np.var( values )
-        # Compute the maximum
-        stats[key]['Max'] = np.amax( values )
-        # Compute the minimum
-        stats[key]['Min'] = np.amin( values )
-        # Compute the range (max - min)
-        stats[key]['PtP'] = np.ptp( values )
-        # Compute the histograms
-        stats[key]['Histogram'] = np.histogram( values )
-        # Consider adding the density argument to the histogram
+            stats[key]={}
+            # Count the number of non-zero elements in the array
+            stats[key]['N'] = np.count_nonzero( d[key][:ds_lim] )
+            # Compute the arithmetic mean of the values
+            stats[key]['Mean'] = np.mean( d[key][:ds_lim] )
+            # Compute the median of the values
+            stats[key]['Median'] = np.median( d[key][:ds_lim] )
+            # Compute the Standard Deviation
+            stats[key]['Std'] = np.std( d[key][:ds_lim] )
+            # Compute the variance
+            stats[key]['Var'] = np.var( d[key][:ds_lim] )
+            # Compute the maximum
+            stats[key]['Max'] = np.amax( d[key][:ds_lim] )
+            # Compute the minimum
+            stats[key]['Min'] = np.amin( d[key][:ds_lim] )
+            # Compute the range (max - min)
+            stats[key]['PtP'] = np.ptp( d[key][:ds_lim] )
+            # Compute the histograms
+            stats[key]['Histogram'] = np.histogram( d[key][:ds_lim] )
+            # Consider adding the density argument to the histogram
     return stats
     
 
@@ -344,8 +235,7 @@ def summarize_statistics(stats):
     for run, params in stats.iteritems():
         for param, stat_name in params.iteritems():
             for stat, value in stat_name.iteritems():
-                d.setdefault(run.split('-')[1][0:2], {}
-                ).setdefault(run.split('-')[0], {}
+                d.setdefault(run.split('-')[0], {}
                 ).setdefault(stat, {}
                 ).setdefault(param, []
                 ).append(value)
@@ -353,21 +243,18 @@ def summarize_statistics(stats):
 
 def add_feedrate_metadata(stats, ks):
     """Add feedrate data to the stats summary"""
-    for qw in stats:
-        for run in stats[qw]:
-            # Create the 'Meta' key and make the value be an empty dictionary
-            stats.setdefault(qw, {}).setdefault(run, {}).setdefault('Meta', {})
-            # Put some LaTeX describing the feed rate
-            stats[qw][run]['Meta']['Gs'] = (r'{}{}'.format(run, '\,\si{\g \per \min}'))
-            # Compute the volumetric unit feed rate
-            stats[qw][run]['Meta']['qf'] = np.int(run) / (1000 * B0 * 60 * rho_s )
-            # Compute the Einstein Number for the run
-            stats[qw][run]['Meta']['qb_star'] = (stats[qw][run]['Meta']['qf'] 
-                                             / ( D * np.sqrt(R*g*D) ) )
-            # Store the roughness height for each run
-            stats[qw][run]['Meta']['ks'] = ks
-            # Store the unit flow rate for each run in (m3/s)/m
-            stats[qw][run]['Meta']['qw'] = np.float(qw) * 1e-3 / B0
+    for run in stats:
+        # Create the 'Meta' key and make the value be an empty dictionary
+        stats.setdefault(run, {}).setdefault('Meta', {})
+        # Put some LaTeX describing the feed rate
+        stats[run]['Meta']['Gs'] = (r'{}{}'.format(run, '\,\si{\g \per \min}'))
+        # Compute the volumetric unit feed rate
+        stats[run]['Meta']['qf'] = np.int(run) / (1000 * B0 * 60 * rho_s )
+        # Compute the Einstein Number for the run
+        stats[run]['Meta']['qb_star'] = (stats[run]['Meta']['qf'] 
+                                         / ( D * np.sqrt(R*g*D) ) )
+        # Store the roughness height for each run
+        stats[run]['Meta']['ks'] = ks
     return stats
     
     
@@ -376,8 +263,9 @@ def main():
     """Main routine for sidewall correction"""
     print 'Script started'
     # Set how many nodes downstream to ignore. I suggest 2.
+    ds_lim = 2
     # Add nodes upstream to ignore. Move all this to input file
-    lim = 2
+    us_lim = 0
     # Load the profiles
     runs = ['equilibrium', 'aggradation']
     for run in runs:
@@ -385,8 +273,6 @@ def main():
         d = {}
         # Create a dictionary to store statistics
         stats = {}
-        # Create a dictionary to store statistics summary
-        stats_summary = {}
         # Choose source path
         if run=='equilibrium':
             os.chdir(eq_in_path)
@@ -404,16 +290,12 @@ def main():
         # Specify dictionary keys to collect side-wall corrected values
         swc_keys = ('Cf', 'Cfb', 'Cfw', 'Re', 'Reb', 'Rew', 'Ab', 'Aw',
                     'taub_star', 'taub', 'tauw', 'ub_star', 'S')
+
         for key in profiles:
             x = profiles[key]['x']
             # Convert the measurements to meters for xi and eta
             xi = profiles[key]['wse'] / 100.
             eta = profiles[key]['bed'] / 100.
-            # Extract flow rate from run name metadata
-            flowrate = key.split('-')[1][:2]
-            Gs = key.split('-')[0]
-            # Recast flow rate as a float and convert to meters per second
-            Q = np.float(flowrate) * 1e-3 # water discharge in m3/s
             # Compute water depth
             H = xi - eta
             # Compute total area
@@ -429,38 +311,33 @@ def main():
             # Compute the friction slope
             Sf = compute_friction_slope(E, x)
             # Remove wall effects and collect results in a single variable.
-            try:
-                swc_values = remove_wall_effects(x, H, U, E, -lim, B0=B0)                
-            except RuntimeError:
-                pdb.set_trace()
 
+            swc_values = sw.remove_wall_effects(x, H, U, E, -ds_lim, B0=B0)
             # Create dictionary to store the computed global parameters
-            # Initialize the dictionary with a key for the flowrate
-            d.setdefault(key, {})
             d[key] = {'x': x, 'xi': xi, 'eta': eta, 'H': H, 'A': A, 'Sl': Sl,
-                                'U': U, 'Fr': Fr, 'E': E, 'Sf': Sf, 'Q': Q}
+            'U': U, 'Fr': Fr, 'E': E, 'Sf': Sf}
             # Add side-wall corrected values to the global parameter dictionary
             d[key].update( dict(itertools.izip(swc_keys, swc_values)) )
 
+            
             # Remove form drag from the sidewall-corrected parameters. Using
             # Einstein decomposition
-            Einstein_skin_friction, ks = compute_Einstein_skin_friction(d[key], -lim)
+            Einstein_skin_friction, ks = compute_Einstein_skin_friction(d[key], -ds_lim)
             # Update the global-parameters dictionary with skin friction values.
             d[key].update(Einstein_skin_friction)
             # Remove form drag from the siewall-corrected parameters using
             # Engelund-Hansen decomposition.
-            # Engelund_Hansen_friction = Engelund_Hansen_skin_friction(d[key],
-            #                                                          lim)
+            Engelund_Hansen_friction = Engelund_Hansen_skin_friction(d[key],
+                                                                     ds_lim)
             # Update the global-parameters dictionary with skin friction values.
-            # d[key].update(Engelund_Hansen_friction)
+            d[key].update(Engelund_Hansen_friction)
 
             # Compute statistics on values stored in dictionary
-            statistics = compute_statistics(d[key], -lim)
+            statistics = compute_statistics(d[key], -ds_lim)
             # Create a dictionary to store statistics and fill it. 
-            stats.setdefault(key, {})
+            stats[key]={}
             stats[key].update(statistics)
-            # Summarize statistics across runs of same feedrate.
-            stats_summary.setdefault(flowrate, {})
+            # Summarize statistics across runs of same feedrate. 
             stats_summary = summarize_statistics(stats)
             # Compute the mass feed rate
             d[key]['Gs'] = np.int(key.split('-')[0])
@@ -469,8 +346,6 @@ def main():
                 d[key]['Gs'],'\,\si{\g \per \minute}' ) )
             # Compute the volumetric unit feed rate, convert grams and minutes.
             d[key]['qf'] = d[key]['Gs'] / (1000 * B0 * 60 * rho_s )
-            # Compute the volumetric unit flow rate, in m/s
-            d[key]['qw'] = d[key]['Q'] / B0 
             # Compute the Einstein Number for the run
             d[key]['qb_star'] = d[key]['qf'] / (D * np.sqrt( R * g * D ) )
             # Store the roughness height
@@ -478,8 +353,8 @@ def main():
         # Add metadata do the stats summary (i.e. Einstein's number)
         stats_summary = add_feedrate_metadata(stats_summary, ks)
         # Store all the input parameters
-        d['input'] = {'g':g, 'nu':nu, 'rho':rho, 'B0':B0, 'xi_d':xi_d,
-                      'D':D, 'rho_s':rho_s, 'R':R}
+        d['input'] = {'g':g, 'nu':nu, 'rho':rho, 'B0':B0, 'Q':Q,
+                      'xi_d':xi_d, 'D':D, 'rho_s':rho_s, 'R':R}
         # Once all the values are computed, pickle the results:
         write_pickle(d, run, 'global_parameters')
         # Pickle the statistics
