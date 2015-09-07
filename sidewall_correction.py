@@ -51,7 +51,7 @@ def fNikuradse(fw, Rew):
     return nikuradse
 
 
-def remove_wall_effects(x, H, U, E, lim, B0=1.0):
+def remove_wall_effects(x, H, U, E, B0=1.0):
     """Remove wall effects according to Vanoni and Brooks"""
     # Define some containers:
     # Area, bed-region
@@ -83,36 +83,36 @@ def remove_wall_effects(x, H, U, E, lim, B0=1.0):
 
     # Perform the computations Compute total energy slope. The -1
     # accounts for python's indexing quirks
-    S = ( E[0] - E[lim-1] ) / ( x[lim-1] - x[0] )
+    S = ( E[0] - E[-1] ) / ( x[-1] - x[0] )
     # Compute total friction coefficient
-    Cf[:lim] = fChezy(H[:lim], U[:lim], B0, S)
+    Cf[:] = fChezy(H[:], U[:], B0, S)
     # Compute total Reynolds number
-    Re[:lim] = fRe(B0, H[:lim], U[:lim], nu)
+    Re[:] = fRe(B0, H[:], U[:], nu)
     # Compute the ratio of the friction coefficient to the
     # Reynolds No.
-    Ref1[:lim] = Cf[:lim] / Re[:lim]
+    Ref1[:] = Cf[:] / Re[:]
     # Compute wall-region friction coefficient, node per node
     # Get the wall-region Reynold's number while we are at it. 
-    for i, value in enumerate(Cf[:lim]):
+    for i, value in enumerate(Cf[:]):
        Cfw[i], Rew[i] = fChezy_wall(Ref1[i] * 8)
     # Find the wall-region area
-    Aw[:lim] = Rew[:lim] * nu * (2 * H[:lim] ) / U[:lim] 
+    Aw[:] = Rew[:] * nu * (2 * H[:] ) / U[:] 
     # Find the bed-region area by substrating wall-region area from
     # total area
-    Ab[:lim] = B0 * H[:lim] - Aw[:lim]
+    Ab[:] = B0 * H[:] - Aw[:]
     # Compute the bed-region friction factor
-    Cfb[:lim] = Cf[:lim] + ( ( 2 * H[:lim] ) / B0 ) * ( Cf[:lim] -
-                                                        Cfw[:lim] )
+    Cfb[:] = Cf[:] + ( ( 2 * H[:] ) / B0 ) * ( Cf[:] -
+                                                        Cfw[:] )
     # Compute the bed-region Reynolds number
-    Reb[:lim] = Cfb[:lim] / Ref1[:lim]
+    Reb[:] = Cfb[:] / Ref1[:]
     # Compute shear stresses for bed region
-    taub[:lim] = rho * Cfb[:lim] * U[:lim] ** 2
+    taub[:] = rho * Cfb[:] * U[:] ** 2
     # Compute shear stresses for wall region
-    tauw[:lim] = rho * Cfw[:lim] * U[:lim] ** 2
+    tauw[:] = rho * Cfw[:] * U[:] ** 2
     # Compute the sidewall-corrected Shields number for the bed region
-    taub_star[:lim] = Cfb[:lim] * U[:lim] ** 2 / ( R * g * D)
+    taub_star[:] = Cfb[:] * U[:] ** 2 / ( R * g * D)
     # Compute the sidewall-corrected shear velocity
-    ub_star[:lim] = np.sqrt( taub[:lim] / rho )
+    ub_star[:] = np.sqrt( taub[:] / rho )
    
     # Collect the results
     r = Cf, Cfb, Cfw, Re, Reb, Rew, Ab, Aw, taub_star, taub, tauw, ub_star, S
