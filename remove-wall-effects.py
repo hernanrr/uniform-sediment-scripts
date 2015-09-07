@@ -297,7 +297,7 @@ def main():
             xi = profiles[key]['wse'] / 100.
             eta = profiles[key]['bed'] / 100.
             # Compute water depth
-            H = xi - eta
+            H = np.mean(xi - eta)
             # Compute total area
             A = B0 * H
             # Compute the bed slope
