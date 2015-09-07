@@ -107,7 +107,7 @@ def compute_bed_slope(eta, x):
     
 
         
-def compute_Einstein_skin_friction(swc, ds_lim):
+def compute_Einstein_skin_friction(swc):
     """Remove form drag effects from the side-wall-corrected results"""
     # Create a dictionary to store the result
     d = {}
@@ -125,7 +125,7 @@ def compute_Einstein_skin_friction(swc, ds_lim):
     d['phi'] = np.full_like(swc['taub_star'], 0., dtype=float)
     # Compute bed-region hydraulic radius
     d['Rhb'] = swc['Ab'] / B0
-    for i, Rhb in enumerate(d['Rhb'][:ds_lim]):
+    for i, Rhb in enumerate(d['Rhb']):
         convergence = False
         while not convergence:
             Rhb1 = Rhb
@@ -144,23 +144,23 @@ def compute_Einstein_skin_friction(swc, ds_lim):
         
     # We now choose the correct values:
     # First, specify the comparison condition
-    condition = [ d['Rhb_s'][:ds_lim] < d['Rhb'][:ds_lim] ]
+    condition = [ d['Rhb_s'] < d['Rhb'] ]
     # Then, specify the functions based on the conditions
-    choice_Rhbs = [ d['Rhb_s'][:ds_lim], d['Rhb'][:ds_lim] ] 
-    choice_ub_star_s = [ d['ub_star_s'][:ds_lim], swc['ub_star'][:ds_lim] ]
-    choice_taub_star_s = [ d['ub_star_s'][:ds_lim] ** 2 / ( R * g * D ) , \
-                           swc['taub_star'][:ds_lim] ]
+    choice_Rhbs = [ d['Rhb_s'], d['Rhb'] ] 
+    choice_ub_star_s = [ d['ub_star_s'], swc['ub_star'] ]
+    choice_taub_star_s = [ d['ub_star_s'] ** 2 / ( R * g * D ) , \
+                           swc['taub_star'] ]
 
     # Finally, apply the conditions and functions
-    d['Rhb_s'][:ds_lim] = np.where( condition, *choice_Rhbs )
-    d['ub_star_s'][:ds_lim] = np.where(  condition, *choice_ub_star_s )
-    d['taub_star_s'][:ds_lim] = np.where( condition, *choice_taub_star_s )
-    d['phi'][:ds_lim] =  d['taub_star_s'][:ds_lim] / swc['taub_star'][:ds_lim]
-    d['Cfbs'][:ds_lim] = ( d['ub_star_s'][:ds_lim] / swc['U'][:ds_lim] ) ** 2
+    d['Rhb_s'] = np.where( condition, *choice_Rhbs )
+    d['ub_star_s'] = np.where(  condition, *choice_ub_star_s )
+    d['taub_star_s'] = np.where( condition, *choice_taub_star_s )
+    d['phi'] =  d['taub_star_s'] / swc['taub_star']
+    d['Cfbs'] = ( d['ub_star_s'] / swc['U'] ) ** 2
     # We need Cfbs to plot the skin stresses. 
     return d, ks
 
-def Engelund_Hansen_skin_friction(swc, ds_lim):
+def Engelund_Hansen_skin_friction(swc):
     """Remove form drag effects from the side-wall-corrected results using the
     Engelund-Hansen decomposition
 
@@ -178,7 +178,7 @@ def Engelund_Hansen_skin_friction(swc, ds_lim):
     # Define some vectors
     d['EH_tau_star_b_s'] = np.full_like(swc['taub_star'], 0., dtype=float)
     
-    d['EH_tau_star_b_s'][:ds_lim] = 0.4 * swc['taub_star'][:ds_lim] ** 2 
+    d['EH_tau_star_b_s'] = 0.4 * swc['taub_star'] ** 2 
     return d
 
 def fManning(u_star_b, U, Rbs, alpha_r, ks):
@@ -199,7 +199,7 @@ def write_pickle(d, run, suffix):
     return
 
 
-def compute_statistics(d, ds_lim):
+def compute_statistics(d):
     """Computes statistics of the variables stored in the dictionary"""
     stats={}
     for key in d:
@@ -208,23 +208,23 @@ def compute_statistics(d, ds_lim):
         else:
             stats[key]={}
             # Count the number of non-zero elements in the array
-            stats[key]['N'] = np.count_nonzero( d[key][:ds_lim] )
+            stats[key]['N'] = np.count_nonzero( d[key] )
             # Compute the arithmetic mean of the values
-            stats[key]['Mean'] = np.mean( d[key][:ds_lim] )
+            stats[key]['Mean'] = np.mean( d[key] )
             # Compute the median of the values
-            stats[key]['Median'] = np.median( d[key][:ds_lim] )
+            stats[key]['Median'] = np.median( d[key] )
             # Compute the Standard Deviation
-            stats[key]['Std'] = np.std( d[key][:ds_lim] )
+            stats[key]['Std'] = np.std( d[key] )
             # Compute the variance
-            stats[key]['Var'] = np.var( d[key][:ds_lim] )
+            stats[key]['Var'] = np.var( d[key] )
             # Compute the maximum
-            stats[key]['Max'] = np.amax( d[key][:ds_lim] )
+            stats[key]['Max'] = np.amax( d[key] )
             # Compute the minimum
-            stats[key]['Min'] = np.amin( d[key][:ds_lim] )
+            stats[key]['Min'] = np.amin( d[key] )
             # Compute the range (max - min)
-            stats[key]['PtP'] = np.ptp( d[key][:ds_lim] )
+            stats[key]['PtP'] = np.ptp( d[key] )
             # Compute the histograms
-            stats[key]['Histogram'] = np.histogram( d[key][:ds_lim] )
+            stats[key]['Histogram'] = np.histogram( d[key] )
             # Consider adding the density argument to the histogram
     return stats
     
@@ -312,7 +312,7 @@ def main():
             Sf = compute_friction_slope(E, x)
             # Remove wall effects and collect results in a single variable.
 
-            swc_values = sw.remove_wall_effects(x, H, U, E, -ds_lim, B0=B0)
+            swc_values = sw.remove_wall_effects(x, H, U, E, B0=B0)
             # Create dictionary to store the computed global parameters
             d[key] = {'x': x, 'xi': xi, 'eta': eta, 'H': H, 'A': A, 'Sl': Sl,
             'U': U, 'Fr': Fr, 'E': E, 'Sf': Sf}
@@ -322,18 +322,17 @@ def main():
             
             # Remove form drag from the sidewall-corrected parameters. Using
             # Einstein decomposition
-            Einstein_skin_friction, ks = compute_Einstein_skin_friction(d[key], -ds_lim)
+            Einstein_skin_friction, ks = compute_Einstein_skin_friction(d[key])
             # Update the global-parameters dictionary with skin friction values.
             d[key].update(Einstein_skin_friction)
             # Remove form drag from the siewall-corrected parameters using
             # Engelund-Hansen decomposition.
-            Engelund_Hansen_friction = Engelund_Hansen_skin_friction(d[key],
-                                                                     ds_lim)
+            Engelund_Hansen_friction = Engelund_Hansen_skin_friction(d[key] )
             # Update the global-parameters dictionary with skin friction values.
             d[key].update(Engelund_Hansen_friction)
 
             # Compute statistics on values stored in dictionary
-            statistics = compute_statistics(d[key], -ds_lim)
+            statistics = compute_statistics(d[key])
             # Create a dictionary to store statistics and fill it. 
             stats[key]={}
             stats[key].update(statistics)
